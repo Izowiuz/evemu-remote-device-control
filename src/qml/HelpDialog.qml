@@ -12,13 +12,12 @@ Dialog {
     modal: true
     standardButtons: Dialog.Ok
 
-    Text {
+    Label {
         anchors.fill: parent
 
         font {
             pixelSize: 15
         }
-        color: "white"
 
         textFormat: Text.MarkdownText
         text: FileAPI.readFile(":/src/Help.md")

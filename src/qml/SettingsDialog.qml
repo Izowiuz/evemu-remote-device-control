@@ -166,7 +166,7 @@ Dialog {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            title: qsTr("Custom key keyboard mappings - JSON array of objects, example - [ {\"qt\": \"Key_Control\", \"ev\": \"KEY_CTRL\"} ]")
+            title: qsTr("Custom keyboard mappings - JSON array of objects, example - [ {\"qt\": \"Key_Control\", \"ev\": \"KEY_CTRL\"} ]")
 
             Flickable {
                  id: flickable
