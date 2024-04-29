@@ -8,14 +8,20 @@ Item {
 
     readonly property size mouseMarkerSize: Qt.size(30, 30)
     property QtObject currentMouseMarker
+    property int pressedKeys: 0
+    property bool keyboardInputEnabled: SettingsAPI.settings.keyboardDeviceName.length !== 0
+                                        && root.activeFocus
+                                        && !DeviceControlAPI.isProcessingEvent
+    property bool mouseInputEnabled: SettingsAPI.settings.mouseDeviceName.length !== 0
+                                     && !DeviceControlAPI.isProcessingEvent
+    property bool blockUntillNoPressedKeys: false
 
     clip: true
     activeFocusOnTab: true
-    enabled: !DeviceControlAPI.isProcessingEvent
     focus: true
 
     function mouseEvent(mouseEvent) {
-        if (SettingsAPI.settings.mouseDeviceName.length === 0) {
+        if (!root.mouseInputEnabled) {
             return;
         }
 
@@ -35,14 +41,15 @@ Item {
                                            })
         root.currentMouseMarker = obj
 
-        DeviceControlAPI.mouseEvent({
-            "position": Qt.point(mouseEvent.x, mouseEvent.y),
-            "leftClick": (mouseEvent.modifiers & Qt.ControlModifier) > 0
-        })
+        DeviceControlAPI.mouseEvent(
+            mouseEvent.buttons,
+            mouseEvent.modifiers,
+            Qt.point(mouseEvent.x, mouseEvent.y)
+        )
     }
 
     function keyboardEvent(keyboardEvent) {
-        if (SettingsAPI.settings.keyboardDeviceName.length === 0) {
+        if (!root.keyboardInputEnabled) {
             return;
         }
 
@@ -52,8 +59,31 @@ Item {
         )
     }
 
+
     Keys.onPressed: (event) => {
-        root.keyboardEvent(event);
+        if (event.isAutoRepeat) {
+            return
+        }
+
+        root.pressedKeys++
+        event.accepted = true;
+    }
+
+    Keys.onReleased: (event) => {
+        if (event.isAutoRepeat) {
+            return
+        }
+
+        root.pressedKeys--
+
+        if (!root.blockUntillNoPressedKeys) {
+            root.keyboardEvent(event);
+            event.accepted = true;
+        }
+
+        if (root.pressedKeys === 0) {
+            root.blockUntillNoPressedKeys = false
+        }
     }
 
     Column {
@@ -65,32 +95,28 @@ Item {
         z: 100
 
         Label {
-            property bool mouseInputEnabled: SettingsAPI.settings.mouseDeviceName.length !== 0  && root.enabled
-
             font {
                 bold: true
                 pointSize: 13
             }
-            text: mouseInputEnabled ?
+            text: root.mouseInputEnabled ?
                       qsTr("Mouse input enabled")
                     : qsTr("Mouse input disabled")
-            color: mouseInputEnabled ?
+            color: root.mouseInputEnabled ?
                        "#7cb46b"
                      : "#f4444e"
             opacity: 0.74
         }
 
         Label {
-            property bool keyboardInputEnabled: SettingsAPI.settings.keyboardDeviceName.length !== 0 && root.activeFocus && root.enabled
-
             font {
                 bold: true
                 pointSize: 13
             }
-            text: keyboardInputEnabled ?
+            text: root.keyboardInputEnabled ?
                       qsTr("Keyboard input enabled")
                     : qsTr("Keyboard input disabled")
-            color: keyboardInputEnabled ?
+            color: root.keyboardInputEnabled ?
                        "#7cb46b"
                      : "#f4444e"
             opacity: 0.74
@@ -102,6 +128,7 @@ Item {
         width: Math.floor(parent.height * 0.65)
         height: width
         running: DeviceControlAPI.isProcessingEvent
+        enabled: !running
         visible: running
         z: 99
     }
@@ -159,11 +186,19 @@ Item {
             hoverEnabled: true
 
             onReleased: (event) => {
+                if (!root.activeFocus) {
+                    root.forceActiveFocus()
+                }
+
                 if (event.x < 0 || event.y < 0 || event.x > targetRectangle.width || event.y > targetRectangle.height) {
                     return;
                 }
 
-                root.mouseEvent(event);
+                if (root.pressedKeys > 0) {
+                    root.blockUntillNoPressedKeys = true
+                }
+
+                root.mouseEvent(event)
             }
 
             onPositionChanged: (mouse) => {

@@ -14,7 +14,7 @@ void prepareEvemuCommand(QStringList& arguments, const QString& command, bool is
 {
     if (isNextCommand) {
         arguments << erdc::constants::strings::BashAnd;
-        arguments << erdc::constants::strings::BashSleep.arg(QStringLiteral("0.1"));
+        arguments << erdc::constants::strings::BashSleep.arg(QString::number(0.1));
         arguments << erdc::constants::strings::BashAnd;
     }
 
@@ -35,7 +35,7 @@ DeviceControl::DeviceControl(Settings* settingsHandler, EventLog* eventLogHandle
     assert(eventLogHandler);
 }
 
-void DeviceControl::mouseEvent(const QVariantMap& parameters)
+void DeviceControl::mouseEvent(int buttons, int modifiers, QPoint position)
 {
     if (mIsProcessingEvent) {
         mEventLogHandler->logEvent(constants::enums::EventLogSeverity::Warning,
@@ -47,13 +47,13 @@ void DeviceControl::mouseEvent(const QVariantMap& parameters)
     auto event = std::make_shared<MouseEvent>();
 
     event->deviceName = mSettingsHandler->settings()->value(constants::strings::MouseDeviceName).toString();
-    event->requestedPosition = parameters[constants::strings::Position].toPoint();
+    event->requestedPosition = position;
     event->scale = QPointF(mSettingsHandler->settings()->value(constants::strings::XScaleFactor).toFloat(),
                            mSettingsHandler->settings()->value(constants::strings::YScaleFactor).toFloat());
     event->resultingPosition = QPoint(std::floor(event->requestedPosition.x() * event->scale.x()),
                                       std::floor(event->requestedPosition.y() * event->scale.y()));
 
-    event->mouseEventType = parameters[constants::strings::LeftClick].toBool() ?
+    event->mouseEventType = static_cast<Qt::KeyboardModifiers>(modifiers).testAnyFlag(Qt::ControlModifier) ?
                                 constants::enums::MouseEventType::LeftClick :
                                 constants::enums::MouseEventType::Move;
 
@@ -73,12 +73,12 @@ void DeviceControl::mouseEvent(const QVariantMap& parameters)
         eventArguments,
         constants::strings::EV_REL_REL_Y.arg(event->deviceName, QString::number(event->resultingPosition.y())));
 
-    if (parameters[constants::strings::LeftClick].toBool()) {
+    if (event->mouseEventType == constants::enums::MouseEventType::LeftClick) {
         // lmb click
         prepareEvemuCommand(eventArguments,
-                            constants::strings::EV_KEY_BTN_LEFT.arg(event->deviceName, QStringLiteral("1")));
+                            constants::strings::EV_KEY_BTN_LEFT.arg(event->deviceName, constants::strings::One));
         prepareEvemuCommand(eventArguments,
-                            constants::strings::EV_KEY_BTN_LEFT.arg(event->deviceName, QStringLiteral("0")));
+                            constants::strings::EV_KEY_BTN_LEFT.arg(event->deviceName, constants::strings::Zero));
     }
 
     launchSSHProcess(eventArguments, std::move(event));
@@ -105,11 +105,12 @@ void DeviceControl::keyboardEvent(int key, int modifiers)
     QStringList eventArguments;
 
     prepareEvemuCommand(eventArguments,
-                        constants::strings::EV_KEY_KEYBOARD.arg(event->deviceName, parsedKey, QStringLiteral("1")),
+                        constants::strings::EV_KEY_KEYBOARD.arg(event->deviceName, parsedKey, constants::strings::One),
                         false);
 
-    prepareEvemuCommand(eventArguments,
-                        constants::strings::EV_KEY_KEYBOARD.arg(event->deviceName, parsedKey, QStringLiteral("0")));
+    prepareEvemuCommand(
+        eventArguments,
+        constants::strings::EV_KEY_KEYBOARD.arg(event->deviceName, parsedKey, constants::strings::Zero));
 
     launchSSHProcess(eventArguments, std::move(event));
 }
@@ -130,10 +131,29 @@ void DeviceControl::launchSSHProcess(const QStringList& eventArguments, std::sha
         return;
     }
 
+    const auto identityFile = mSettingsHandler->settings()->value(constants::strings::IdentityFile).toString();
+    const auto sshAskPass = mSettingsHandler->settings()->value(constants::strings::SshAskPass).toString();
+
+    if (!identityFile.isEmpty() && sshAskPass.isEmpty()) {
+        mEventLogHandler->logEvent(
+            constants::enums::EventLogSeverity::Warning,
+            QStringLiteral("When using identity file authorizzation SSK_ASKPASS seting is required - check settings"));
+
+        return;
+    }
+
     auto* process = new QProcess(this);
 
-    connect(process, &QProcess::started, this, [this]() { setIsProcessingEvent(true); });
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
 
+    if (!identityFile.isEmpty()) {
+        env.insert(constants::strings::SshAskPassEnv, sshAskPass);
+        env.insert(constants::strings::SshAskPassRequireEnv, constants::strings::Force);
+    }
+
+    process->setProcessEnvironment(env);
+
+    connect(process, &QProcess::started, this, [this]() { setIsProcessingEvent(true); });
     connect(process,
             &QProcess::finished,
             this,
@@ -154,7 +174,6 @@ void DeviceControl::launchSSHProcess(const QStringList& eventArguments, std::sha
 
                 setIsProcessingEvent(false);
             });
-
     connect(process, &QProcess::errorOccurred, this, [this, event = event](QProcess::ProcessError error) {
         mEventLogHandler->logEvent(constants::enums::EventLogSeverity::Error,
                                    QStringLiteral("Process error occuerd %1:").arg(error));
@@ -162,11 +181,20 @@ void DeviceControl::launchSSHProcess(const QStringList& eventArguments, std::sha
 
     QStringList arguments;
 
-    arguments << QStringLiteral("-p") << mSettingsHandler->settings()->value(constants::strings::Password).toString();
-    arguments << QStringLiteral("ssh") << QStringLiteral("-l");
-    arguments << mSettingsHandler->settings()->value(constants::strings::User).toString();
-    arguments << mSettingsHandler->settings()->value(constants::strings::Host).toString();
-    arguments << QStringLiteral("-o") << QStringLiteral("PreferredAuthentications=password");
+    if (!identityFile.isEmpty()) {
+        arguments << QStringLiteral("ssh");
+        arguments << QStringLiteral("-i") << identityFile << QStringLiteral("-l");
+        arguments << mSettingsHandler->settings()->value(constants::strings::User).toString();
+        arguments << mSettingsHandler->settings()->value(constants::strings::Host).toString();
+    } else {
+        arguments << QStringLiteral("-p")
+                  << mSettingsHandler->settings()->value(constants::strings::Password).toString();
+        arguments << QStringLiteral("ssh") << QStringLiteral("-l");
+        arguments << mSettingsHandler->settings()->value(constants::strings::User).toString();
+        arguments << mSettingsHandler->settings()->value(constants::strings::Host).toString();
+        arguments << QStringLiteral("-o") << QStringLiteral("PreferredAuthentications=password");
+    }
+
     arguments << eventArguments;
 
     process->start(QStringLiteral("sshpass"), arguments);

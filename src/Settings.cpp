@@ -31,6 +31,8 @@ Settings::Settings(EventLog* eventLogHandler, QObject* parent)
     loadValueIfExists(settings, constants::strings::Host, QStringLiteral(""));
     loadValueIfExists(settings, constants::strings::User, QStringLiteral(""));
     loadValueIfExists(settings, constants::strings::Password, QStringLiteral(""));
+    loadValueIfExists(settings, constants::strings::IdentityFile, QStringLiteral(""));
+    loadValueIfExists(settings, constants::strings::SshAskPass, QStringLiteral(""));
     loadValueIfExists(settings, constants::strings::XScaleFactor, 1.f);
     loadValueIfExists(settings, constants::strings::YScaleFactor, 1.f);
     loadValueIfExists(settings, constants::strings::CustomKeyboardMappings, QStringLiteral("[]"));
@@ -48,6 +50,8 @@ Settings::Settings(EventLog* eventLogHandler, QObject* parent)
         saveValue(settings, constants::strings::DeviceHeight);
         saveValue(settings, constants::strings::Host);
         saveValue(settings, constants::strings::User);
+        saveValue(settings, constants::strings::IdentityFile);
+        saveValue(settings, constants::strings::SshAskPass);
         saveValue(settings, constants::strings::XScaleFactor);
         saveValue(settings, constants::strings::YScaleFactor);
         saveValue(settings, constants::strings::CustomKeyboardMappings);

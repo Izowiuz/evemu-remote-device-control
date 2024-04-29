@@ -20,6 +20,8 @@ Dialog {
         SettingsAPI.settings.host = host.textField.text
         SettingsAPI.settings.user = user.textField.text
         SettingsAPI.settings.password = password.textField.text
+        SettingsAPI.settings.identityFile = identityFile.textField.text
+        SettingsAPI.settings.sshAskPass = sshAskPass.textField.text
         SettingsAPI.settings.xScaleFactor = xScaleFactor.textField.text
         SettingsAPI.settings.yScaleFactor = yScaleFactor.textField.text
         SettingsAPI.settings.customKeyboardMappings = customKeyboardMappings.text
@@ -39,7 +41,9 @@ Dialog {
             deviceHeight.textField.text = SettingsAPI.settings.deviceHeight
             host.textField.text = SettingsAPI.settings.host
             user.textField.text = SettingsAPI.settings.user
+            identityFile.textField.text = SettingsAPI.settings.identityFile
             password.textField.text = SettingsAPI.settings.password
+            sshAskPass.textField.text = SettingsAPI.settings.sshAskPass
             xScaleFactor.textField.text = SettingsAPI.settings.xScaleFactor
             yScaleFactor.textField.text = SettingsAPI.settings.yScaleFactor
             customKeyboardMappings.text = SettingsAPI.settings.customKeyboardMappings
@@ -65,7 +69,7 @@ Dialog {
                 ColumnLayout {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-
+                    Layout.horizontalStretchFactor: 1
                     spacing: 10
 
                     TextFieldSetting {
@@ -99,7 +103,7 @@ Dialog {
                 ColumnLayout {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-
+                    Layout.horizontalStretchFactor: 1
                     spacing: 10
 
                     TextFieldSetting {
@@ -137,27 +141,57 @@ Dialog {
 
             title: qsTr("SSH")
 
-            ColumnLayout {
+            RowLayout {
                 anchors.fill: parent
                 spacing: 10
 
-                TextFieldSetting {
-                    id: host
+                ColumnLayout {
                     Layout.fillWidth: true
-                    labelText: qsTr("Host")
+                    Layout.fillHeight: true
+                    Layout.horizontalStretchFactor: 1
+                    spacing: 10
+
+                    TextFieldSetting {
+                        id: host
+                        Layout.fillWidth: true
+                        labelText: qsTr("Host")
+                    }
+
+                    TextFieldSetting {
+                        id: identityFile
+                        Layout.fillWidth: true
+                        labelText: qsTr("Identity file (<b>preferred way<b>)")
+                    }
+
+                    TextFieldSetting {
+                        id: password
+                        Layout.fillWidth: true
+                        labelText: qsTr("Password (not saved in settings)")
+                        textField.echoMode: TextInput.Password
+                    }
                 }
 
-                TextFieldSetting {
-                    id: user
+                ColumnLayout {
                     Layout.fillWidth: true
-                    labelText: qsTr("User")
-                }
+                    Layout.fillHeight: true
+                    Layout.horizontalStretchFactor: 1
+                    spacing: 10
 
-                TextFieldSetting {
-                    id: password
-                    Layout.fillWidth: true
-                    labelText: qsTr("Password (not saved in settings)")
-                    textField.echoMode: TextInput.Password
+                    TextFieldSetting {
+                        id: user
+                        Layout.fillWidth: true
+                        labelText: qsTr("User")
+                    }
+
+                    TextFieldSetting {
+                        id: sshAskPass
+                        Layout.fillWidth: true
+                        labelText: qsTr("SSH_ASKPASS")
+                    }
+
+                    Item {
+                        Layout.fillHeight: true
+                    }
                 }
             }
         }
@@ -169,42 +203,42 @@ Dialog {
             title: qsTr("Custom keyboard mappings - JSON array of objects, example - [ {\"qt\": \"Key_Control\", \"ev\": \"KEY_CTRL\"} ]")
 
             Flickable {
-                 id: flickable
+                id: flickable
 
-                 anchors.fill: parent
-                 contentWidth: customKeyboardMappings.contentWidth
-                 contentHeight: customKeyboardMappings.contentHeight
-                 ScrollBar.vertical: ScrollBar {
-                     policy: ScrollBar.AlwaysOn
-                 }
-                 boundsBehavior: Flickable.StopAtBounds
+                anchors.fill: parent
+                contentWidth: customKeyboardMappings.contentWidth
+                contentHeight: customKeyboardMappings.contentHeight
+                ScrollBar.vertical: ScrollBar {
+                    policy: ScrollBar.AlwaysOn
+                }
+                boundsBehavior: Flickable.StopAtBounds
 
-                 clip: true
+                clip: true
 
-                 function ensureVisible(r)
-                 {
-                     if (contentX >= r.x) {
-                         contentX = r.x;
-                     } else if (contentX + width <= r.x + r.width) {
-                         contentX = r.x + r.width - width;
-                     }
+                function ensureVisible(r)
+                {
+                    if (contentX >= r.x) {
+                        contentX = r.x;
+                    } else if (contentX + width <= r.x + r.width) {
+                        contentX = r.x + r.width - width;
+                    }
 
-                     if (contentY >= r.y) {
-                         contentY = r.y;
-                     } else if (contentY+height <= r.y + r.height) {
-                         contentY = r.y + r.height - height;
-                     }
-                 }
+                    if (contentY >= r.y) {
+                        contentY = r.y;
+                    } else if (contentY+height <= r.y + r.height) {
+                        contentY = r.y + r.height - height;
+                    }
+                }
 
-                 TextField {
-                     id: customKeyboardMappings
+                TextField {
+                    id: customKeyboardMappings
 
-                     width: flickable.width
-                     focus: true
-                     wrapMode: TextEdit.Wrap
-                     onCursorRectangleChanged: flickable.ensureVisible(cursorRectangle)
-                 }
-             }
+                    width: flickable.width
+                    focus: true
+                    wrapMode: TextEdit.Wrap
+                    onCursorRectangleChanged: flickable.ensureVisible(cursorRectangle)
+                }
+            }
         }
     }
 }

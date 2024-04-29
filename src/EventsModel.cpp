@@ -1,7 +1,5 @@
 #include "EventsModel.h"
 
-#include <QDebug>
-
 namespace erdc
 {
 
@@ -52,8 +50,6 @@ QHash<int, QByteArray> EventsModel::roleNames() const
 
 void EventsModel::addEvent(constants::enums::EventLogSeverity severity, const QString& message)
 {
-    qDebug() << "Incoming event with severity:" << severity << "and message:" << message;
-
     beginInsertRows({}, mEvents.size(), mEvents.size());
     mEvents.push_back({ QDateTime::currentDateTimeUtc(), severity, message });
     endInsertRows();

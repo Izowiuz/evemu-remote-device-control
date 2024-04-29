@@ -1,10 +1,8 @@
 #pragma once
 
 #include <QObject>
-#include <QPointF>
+#include <QPoint>
 #include <QVariantMap>
-
-#include <QDebug>
 
 #include <memory>
 
@@ -48,7 +46,7 @@ class DeviceControl : public QObject
 public:
     DeviceControl(Settings* settingsHandler, EventLog* eventLogHandler, QObject* parent = nullptr);
 
-    Q_INVOKABLE void mouseEvent(const QVariantMap& parameters);
+    Q_INVOKABLE void mouseEvent(int buttons, int modifiers, QPoint position);
     Q_INVOKABLE void keyboardEvent(int key, int modifiers);
     bool isProcessingEvent() const;
 
