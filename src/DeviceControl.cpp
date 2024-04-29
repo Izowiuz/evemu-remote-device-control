@@ -14,7 +14,7 @@ void prepareEvemuCommand(QStringList& arguments, const QString& command, bool is
 {
     if (isNextCommand) {
         arguments << erdc::constants::strings::BashAnd;
-        arguments << erdc::constants::strings::BashSleep.arg(QString::number(0.1));
+        arguments << erdc::constants::strings::BashSleep.arg(QString::number(0.001));
         arguments << erdc::constants::strings::BashAnd;
     }
 
