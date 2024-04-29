@@ -121,6 +121,15 @@ bool DeviceControl::isProcessingEvent() const
 
 void DeviceControl::launchSSHProcess(const QStringList& eventArguments, std::shared_ptr<Event>&& event)
 {
+    if (mSettingsHandler->settings()->value(constants::strings::Password).toString().isEmpty() &&
+        mSettingsHandler->settings()->value(constants::strings::IdentityFile).toString().isEmpty()) {
+
+        mEventLogHandler->logEvent(constants::enums::EventLogSeverity::Warning,
+                                   QStringLiteral("Credentials not set - check settings"));
+
+        return;
+    }
+
     auto* process = new QProcess(this);
 
     connect(process, &QProcess::started, this, [this]() { setIsProcessingEvent(true); });
@@ -133,9 +142,12 @@ void DeviceControl::launchSSHProcess(const QStringList& eventArguments, std::sha
                     mEventLogHandler->logEvent(constants::enums::EventLogSeverity::Info,
                                                QStringLiteral("Event processed, event: %1").arg(event->toString()));
                 } else {
-                    mEventLogHandler->logEvent(constants::enums::EventLogSeverity::Error,
-                                               QStringLiteral("Event processing failed: %1, event: %2")
-                                                   .arg(process->readAllStandardError(), event->toString()));
+                    const auto stderr = process->readAllStandardError();
+
+                    mEventLogHandler->logEvent(
+                        constants::enums::EventLogSeverity::Error,
+                        QStringLiteral("Event processing failed: %1, event: %2")
+                            .arg(stderr.isEmpty() ? QStringLiteral("UNKNOWN ERROR") : stderr, event->toString()));
                 }
 
                 process->deleteLater();
@@ -154,6 +166,7 @@ void DeviceControl::launchSSHProcess(const QStringList& eventArguments, std::sha
     arguments << QStringLiteral("ssh") << QStringLiteral("-l");
     arguments << mSettingsHandler->settings()->value(constants::strings::User).toString();
     arguments << mSettingsHandler->settings()->value(constants::strings::Host).toString();
+    arguments << QStringLiteral("-o") << QStringLiteral("PreferredAuthentications=password");
     arguments << eventArguments;
 
     process->start(QStringLiteral("sshpass"), arguments);
