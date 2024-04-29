@@ -12,14 +12,29 @@ Dialog {
     modal: true
     standardButtons: Dialog.Ok
 
-    Label {
+    Flickable {
+        id: flickable
+
         anchors.fill: parent
 
-        font {
-            pixelSize: 15
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        contentHeight: helpText.implicitHeight
+        ScrollBar.vertical: ScrollBar {
+            policy: flickable.contentHeight > flickable.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
         }
 
-        textFormat: Text.MarkdownText
-        text: FileAPI.readFile(":/src/Help.md")
+        Label {
+            id: helpText
+
+            width: parent.width
+            font {
+                pixelSize: 15
+            }
+
+            textFormat: Text.MarkdownText
+            text: FileAPI.readFile(":/src/Help.md")
+            wrapMode: Text.Wrap
+        }
     }
 }

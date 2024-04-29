@@ -69,7 +69,7 @@ Dialog {
                 ColumnLayout {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    Layout.horizontalStretchFactor: 1
+
                     spacing: 10
 
                     TextFieldSetting {
@@ -103,7 +103,7 @@ Dialog {
                 ColumnLayout {
                     Layout.fillHeight: true
                     Layout.fillWidth: true
-                    Layout.horizontalStretchFactor: 1
+
                     spacing: 10
 
                     TextFieldSetting {
@@ -148,7 +148,7 @@ Dialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.horizontalStretchFactor: 1
+
                     spacing: 10
 
                     TextFieldSetting {
@@ -174,7 +174,7 @@ Dialog {
                 ColumnLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.horizontalStretchFactor: 1
+
                     spacing: 10
 
                     TextFieldSetting {
@@ -186,7 +186,7 @@ Dialog {
                     TextFieldSetting {
                         id: sshAskPass
                         Layout.fillWidth: true
-                        labelText: qsTr("SSH_ASKPASS")
+                        labelText: qsTr("SSH_ASKPASS (<b>obligatory when using identity file<b>)")
                     }
 
                     Item {
@@ -207,9 +207,9 @@ Dialog {
 
                 anchors.fill: parent
                 contentWidth: customKeyboardMappings.contentWidth
-                contentHeight: customKeyboardMappings.contentHeight
+                contentHeight: customKeyboardMappings.implicitHeight
                 ScrollBar.vertical: ScrollBar {
-                    policy: ScrollBar.AlwaysOn
+                    policy: flickable.contentHeight > flickable.height ? ScrollBar.AlwaysOn : ScrollBar.AsNeeded
                 }
                 boundsBehavior: Flickable.StopAtBounds
 
